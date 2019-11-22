@@ -1,5 +1,5 @@
 DEBUG = -g
-EXTERN_LIB = -L./lib -lgmp  -lcrypto
+EXTERN_LIB =  -L/usr/local/openssl/lib -lgmp  -lcrypto
 INCLUDE = -I./include/ 
 CXX = g++
 TARGET = dragonfly_main

@@ -1,10 +1,12 @@
-#include<gmpxx.h>
-#include<assert.h>
+#include <gmpxx.h>
+#include <assert.h>
 #include <openssl/sha.h>
-#include"../include/mpz_math.h"
+#include <openssl/hmac.h>
+#include "../include/mpz_math.h"
 
+gmp_randstate_t RANDSTATE;
 
-void legendre(mpz_t& ret, const mpz_t& a, const mpz_t& p)
+void legendre(mpz_t &ret, const mpz_t &a, const mpz_t &p)
 {
     mpz_t v;
     mpz_init(v);
@@ -14,9 +16,8 @@ void legendre(mpz_t& ret, const mpz_t& a, const mpz_t& p)
     mpz_clear(v);
 }
 
-
 //https://github.com/hvy/integer-factorization/blob/80e73f8910b827d7d17221f829426a15088648c7/src/test.c
-void tonelli_shanks(mpz_t& x, const mpz_t& n, const mpz_t& p)
+void tonelli_shanks(mpz_t &x, const mpz_t &n, const mpz_t &p)
 {
     mpz_t v;
     mpz_init(v);
@@ -114,38 +115,82 @@ void tonelli_shanks(mpz_t& x, const mpz_t& n, const mpz_t& p)
     mpz_clear(b);
 }
 
-
-std::string str2hex_str(const std::string& op)
+std::string str2hex_str(const std::string &op)
 {
-	unsigned char hexChars[] = "0123456789abcdef";
-	unsigned int a, b;
+    unsigned char hexChars[] = "0123456789abcdef";
+    unsigned int a, b;
     std::string hex_rop;
 
-	for (int i = 0; i < op.size(); ++i)
-	{
+    for (int i = 0; i < op.size(); ++i)
+    {
         unsigned char c = op[i];
-		a = (c >> 4) & 0x0f;
-		b = c & 0x0f;
-		hex_rop.push_back(hexChars[a]);
+        a = (c >> 4) & 0x0f;
+        b = c & 0x0f;
+        hex_rop.push_back(hexChars[a]);
         hex_rop.push_back(hexChars[b]);
-	}
+    }
 
     return hex_rop;
 }
 
-std::string mpz2dec_str(const mpz_t& op)
+std::string hex_str2str(const std::string &hex_op)
 {
-	
-    int base = 10;
-    unsigned int  len = mpz_sizeinbase(op, base) + 2;
-    char* rop = new char[len];
-	mpz_get_str(rop, base, op);
+    std::string rop;
+    int len = hex_op.size();
+    int start = 0;
+    if (len % 2 == 1)
+    {
+        unsigned char v = 0;
+        unsigned char c = hex_op[0];
+        if (c >= '0' && c <= '9')
+            v += (c - '0');
+        else if (c >= 'a' && c <= 'f')
+            v += (c - 'a' + 10);
+        else if (c >= 'A' && c <= 'F')
+            v += (c - 'A' + 10);
+
+        rop.push_back(v);
+        start++;
+    }
+
+    for (int i = start; i < len; i += 2)
+    {
+        unsigned char v = 0;
+
+        unsigned char c = hex_op[i];
+        if (c >= '0' && c <= '9')
+            v += (c - '0') * 16;
+        else if (c >= 'a' && c <= 'f')
+            v += (c - 'a' + 10) * 16;
+        else if (c >= 'A' && c <= 'F')
+            v += (c - 'A' + 10) * 16;
+
+        c = hex_op[i + 1];
+        if (c >= '0' && c <= '9')
+            v += (c - '0');
+        else if (c >= 'a' && c <= 'f')
+            v += (c - 'a' + 10);
+        else if (c >= 'A' && c <= 'F')
+            v += (c - 'A' + 10);
+
+        rop.push_back(v);
+    }
+    return rop;
+}
+
+std::string mpz2str(const mpz_t &op, const int base)
+{
+
+    unsigned int len = mpz_sizeinbase(op, base) + 2;
+    char *rop = new char[len];
+    mpz_get_str(rop, base, op);
     std::string dec_str(rop);
-    delete(rop);
+    delete (rop);
     return dec_str;
 }
 
-std::string sha256(const std::string& message){
+std::string sha256(const std::string &message)
+{
     unsigned char hash[32];
 
     SHA256_CTX ctx;
@@ -155,4 +200,53 @@ std::string sha256(const std::string& message){
 
     std::string digest((char *)hash, 32);
     return digest;
+}
+
+std::string hmac_sha256(const std::string &key, const std::string &data)
+{
+    unsigned char hash[32];
+    uint32_t hash_value_len = 0;
+#if (OPENSSL_VERSION_NUMBER >= 0x10100001L)
+    HMAC_CTX *ctx;
+
+    ctx = HMAC_CTX_new();
+    HMAC_Init_ex(ctx, key.c_str(), key.size(), EVP_sha256(), NULL);
+    HMAC_Update(ctx, (unsigned char *)data.c_str(), data.size());
+    HMAC_Final(ctx, (unsigned char *)hash, &hash_value_len);
+    HMAC_CTX_free(ctx);
+#else
+    HMAC_CTX ctx;
+
+    HMAC_CTX_init(&ctx);
+    HMAC_Init_ex(&ctx, key.c_str(), key.size(), EVP_sha256(), NULL);
+    HMAC_Update(&ctx, (unsigned char *)data.c_str(), data.size());
+    HMAC_Final(&ctx, (unsigned char *)hash, &hash_value_len);
+    HMAC_CTX_cleanup(&ctx);
+#endif
+
+    std::string digest((char *)hash, 32);
+    return digest;
+}
+
+std::string transmute_u32_to_u8str(const unsigned int n, const U32Kind mode)
+{
+    std::string u8str(4, 0);
+    if (mode == U32Kind::BE)
+    {
+
+        u8str[0] = (n >> 24) & 0xff;
+        u8str[1] = (n >> 16) & 0xff;
+        u8str[2] = (n >> 8) & 0xff;
+        u8str[3] = n & 0xff;
+    }
+    else //默认为小端
+    {
+
+        u8str[3] = (n >> 24) & 0xff;
+        u8str[2] = (n >> 16) & 0xff;
+        u8str[1] = (n >> 8) & 0xff;
+        u8str[0] = n & 0xff;
+    }
+
+    return u8str;
 }
