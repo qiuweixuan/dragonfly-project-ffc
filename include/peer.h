@@ -63,10 +63,12 @@ public:
     Peer(const std::string &password, const std::string &mac_address, const std::string &name);
     ~Peer();
 
-    void initiate(std::string peer_mac, int k = 40);
+    // void initiate(std::string peer_mac, int k = 40);
+    void initiate(std::string peer_mac, int k = 1);
     std::string compute_hashed_password(const int &counter);
     void key_derivation_function(mpz_t &result_key, const std::string &base, const std::string &str_for_seed, const unsigned int &n);
     void commit_exchange();
+    void commit_exchange(const std::string &priv_hex, const std::string &mask_hex);
     std::string compute_shared_secret(const mpz_t &peer_scalar, const mpz_t &peer_element);
     void confirm_exchange(const std::string &peer_token);
 

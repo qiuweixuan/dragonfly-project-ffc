@@ -1,5 +1,6 @@
 #include <gmpxx.h>
 #include <assert.h>
+#include <vector>
 #include <openssl/sha.h>
 #include <openssl/hmac.h>
 #include "../include/mpz_math.h"
@@ -249,4 +250,69 @@ std::string transmute_u32_to_u8str(const unsigned int n, const U32Kind mode)
     }
 
     return u8str;
+}
+
+std::string transmute_u16_to_u8str(const uint16_t n, const U32Kind mode)
+{
+    std::string u8str(2, 0);
+    if (mode == U32Kind::BE)
+    {
+        u8str[0] = (n >> 8) & 0xff;
+        u8str[1] = n & 0xff;
+    }
+    else //默认为小端
+    {
+        u8str[1] = (n >> 8) & 0xff;
+        u8str[0] = n & 0xff;
+    }
+
+    return u8str;
+}
+
+std::vector<std::string> split(const std::string &s, char ch)
+{
+    int start = 0;
+    int len = 0;
+    std::vector<std::string> ret;
+    for (int i = 0; i < s.length(); i++)
+    {
+        if (s[i] == ch)
+        {
+            ret.push_back(s.substr(start, len));
+            start = i + 1;
+            len = 0;
+        }
+        else
+        {
+            len++;
+        }
+    }
+    if (start < s.length())
+        ret.push_back(s.substr(start, len));
+    return ret;
+}
+
+std::vector<uint8_t> mac2vec(const std::string &mac)
+{
+
+    std::vector<uint8_t> ret;
+    std::vector<std::string> split_mac = split(mac, ':');
+    for (auto &&elem : split_mac)
+    {
+        ret.push_back(atoi(elem.c_str()));
+    }
+
+    return ret;
+}
+
+void trim(std::string &s, char ch)
+{
+    int index = 0;
+    if (!s.empty())
+    {
+        while ((index = s.find(ch, index)) != std::string::npos)
+        {
+            s.erase(index, 1);
+        }
+    }
 }
