@@ -4,7 +4,6 @@
 #include <cstdio>
 #include <random>
 #include "include/point.h"
-#include "include/curve.h"
 #include "include/mpz_math.h"
 #include "include/peer.h"
 using namespace std;

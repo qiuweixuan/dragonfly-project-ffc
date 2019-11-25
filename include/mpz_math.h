@@ -2,6 +2,7 @@
 #define MPZ_MATH
 
 #include <gmpxx.h>
+#include <vector>
 
 void legendre(mpz_t &ret, const mpz_t &a, const mpz_t &p);
 
@@ -27,5 +28,13 @@ enum class U32Kind
 };
 
 std::string transmute_u32_to_u8str(const unsigned int n, const U32Kind mode);
+
+std::string transmute_u16_to_u8str(const uint16_t n, const U32Kind mode);
+
+std::vector<std::string> split(const std::string &s, char ch);
+
+std::vector<uint8_t> mac2vec(const std::string &mac);
+
+void trim(std::string &s, char ch);
 
 #endif
