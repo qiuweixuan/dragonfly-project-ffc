@@ -230,7 +230,7 @@ void Peer::initiate(std::string peer_mac, int k)
 
         // temp = KDF-n(base, "Dragonfly Hunting And Pecking")
         this->key_derivation_function(temp, base, str_for_seed, n);
-        // gmp_printf("temp = %Zx\n", temp);
+        gmp_printf("pwd-value = %Zx\n", temp);
 
         //seed = (temp mod(p - 1)) + 1 mpz_sub_ui(seed, this->prime, 1);
         /* 
